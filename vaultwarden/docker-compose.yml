@@ -1,0 +1,39 @@
+version: '3.5'
+
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    #expose:
+    #  - "80"
+    #  - "3012"
+    ports:
+      - 8080:80
+    volumes:
+      - ${ROOT_PATH}/vaultwarden-data:/data
+    restart: on-failure
+    environment:
+      WEBSOCKET_ENABLED: ${WEBSOCKET_ENABLED}
+      SIGNUPS_ALLOWED: ${SIGNUPS_ALLOWED}
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
+    networks:
+      - vaultwarden
+
+        #  ingress:
+        #      image: nginx:latest
+        #      container_name: ingress
+        #      networks:
+        #        - vaultwarden
+        #      ports:
+        #        - 80:80
+        #        - 443:443
+        #      restart: unless-stopped
+        #      networks:
+        #        - vaultwarden
+        #      volumes:
+        #        - ./nginx-data/config:/etc/nginx/conf.d
+        #        - ./nginx-data/certs:/etc/nginx/certs
+
+
+networks:
+  vaultwarden:
+    external: false
