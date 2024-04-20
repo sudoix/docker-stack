@@ -1,0 +1,9 @@
+gitlab-runner register \
+    --non-interactive \
+    --registration-token glrt-Zz9dGYCGepURw3oJCbXx \
+    --locked=false \
+    --description docker-stable \
+    --url http://git.sudoix.ir \
+    --executor docker \
+    --docker-image docker:stable \
+    --docker-volumes "/var/run/docker.sock:/var/run/docker.sock" 
