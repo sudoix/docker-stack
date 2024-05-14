@@ -1,0 +1,140 @@
+version: '3.8'
+
+services:
+  mongo1:
+    # build:
+    #   context: /root/mongo/mongo/
+    #   dockerfile: Dockerfile
+    image: mongo:7.1
+    container_name: mongo1
+    hostname: mongo1
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - "27017:27017"
+    command: --replSet rs0 --keyFile /etc/mongo-keyfile --bind_ip_all --port 27017 --oplogSize 3
+    healthcheck:
+      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo1:27017'}, {_id:1,host:'mongo2:27017'}, {_id:2,host:'mongo3:27017'}]}) }" | mongosh --port 27017 -u root -p root --authenticationDatabase admin
+      interval: 10s
+      timeout: 20s
+      start_period: 30s
+      retries: 5
+    volumes:
+      - mongo1_data:/data/db
+
+    networks:
+      - mongo_net
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+      restart_policy:
+        condition: any
+        delay: 20s
+        window: 60s
+      placement:
+         constraints: [node.hostname == sw1]
+
+  mongo2:
+    # build:
+    #   context: /root/mongo/mongo/
+    #   dockerfile: Dockerfile
+    image: mongo:7.1
+    container_name: mongo2
+    hostname: mongo2
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - "27018:27017"
+    command: --replSet rs0 --keyFile /etc/mongo-keyfile --bind_ip_all --port 27017 --oplogSize 3
+    volumes:
+      - mongo2_data:/data/db
+
+    networks:
+      - mongo_net
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+      restart_policy:
+        condition: any
+        delay: 20s
+        window: 60s
+      placement:
+         constraints: [node.hostname == sw2]
+
+  mongo3:
+    # build:
+    #   context: /root/mongo/mongo/
+    #   dockerfile: Dockerfile
+    image: mongo:7.1
+    container_name: mongo3
+    hostname: mongo3
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - "27019:27017"
+    command: --replSet rs0 --keyFile /etc/mongo-keyfile --bind_ip_all --port 27017 --oplogSize 3
+    volumes:
+      - mongo3_data:/data/db
+    networks:
+      - mongo_net
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+      restart_policy:
+        condition: any
+        delay: 20s
+        window: 60s
+      placement:
+         constraints: [node.hostname == sw3]
+
+  mongo-express:
+    image: mongo-express
+    container_name: mongo-express
+    hostname: mongo-express
+    restart: always
+    environment:
+      ME_CONFIG_BASICAUTH_USERNAME: ""
+      ME_CONFIG_MONGODB_URL: "mongodb://root:root@mongo1:27017"
+    ports:
+      - "8081:8081"
+    networks:
+      - mongo_net
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+      restart_policy:
+        condition: any
+        delay: 20s
+        window: 60s
+      placement:
+         constraints: [node.hostname == sw1]
+
+volumes:
+  mongo1_data: {}
+  mongo2_data: {}
+  mongo3_data: {}
+
+networks:
+  mongo_net:
