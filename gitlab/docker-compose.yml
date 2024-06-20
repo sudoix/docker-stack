@@ -1,0 +1,60 @@
+version: '3.8'
+services:
+  gitlab:
+    image: "gitlab/gitlab-ce:17.0.0-ce.0"
+    hostname: "gitlab"
+    container_name: "gitlab"
+    restart: always
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://git.sudoix.ir'
+        gitlab_rails['gitlab_shell_ssh_port'] = 22
+        gitlab_rails['time_zone'] = 'Tehran'
+    ports:
+      - "80:80"
+      - "22:22"
+      - "443:443"
+    volumes:
+      - /data/gitlab/config:/etc/gitlab
+      - /data/gitlab/logs:/var/log/gitlab
+      - /data/gitlab/data:/var/opt/gitlab
+    # deploy:
+    #   mode: replicated
+    #   replicas: 1
+    #   update_config:
+    #     parallelism: 1
+    #     #delay: 30s
+    #     order: start-first
+    #   #restart_policy:
+    #     #condition: any
+    #     #delay: 20s
+    #     #window: 60s
+    #   placement:
+    #      constraints: [node.hostname == gitlab]
+
+  # gitlab-runner:
+  #   image: gitlab/gitlab-runner:alpine
+  #   volumes:
+  #     - /home/gitlab-runner:/etc/gitlab-runner
+  #     - /var/run/docker.sock:/var/run/docker.sock
+    # deploy:
+    #   mode: replicated
+    #   replicas: 1
+    #   update_config:
+    #     parallelism: 1
+    #     delay: 30s
+    #     order: start-first
+    #   restart_policy:
+    #     condition: any
+    #     delay: 20s
+    #     window: 60s
+    #   placement:
+    #      constraints: [node.hostname == gitlab]
+
+
+
+#password address:vi /home/gitlab/config/initial_root_password
+#config of git:vi /home/gitlab/config/gitlab.rb
+#first define a project
+#transfer history of the last repository of git
+#Sign-up restrictions unchecked
