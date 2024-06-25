@@ -1,0 +1,210 @@
+version: '3.8'
+
+services:
+  mongo1:
+    # build:
+    #   context: /root/mongo/mongo/
+    #   dockerfile: Dockerfile
+    image: mongo:7.1
+    container_name: mongo1
+    hostname: mongo1
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - "27017:27017"
+    command: --replSet rs0 --keyFile /etc/mongo-keyfile --bind_ip_all --port 27017 --oplogSize 3
+    healthcheck:
+      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo1:27017'}, {_id:1,host:'mongo2:27017'}, {_id:2,host:'mongo3:27017'}]}) }" | mongosh --port 27017 -u root -p root --authenticationDatabase admin
+      interval: 10s
+      timeout: 20s
+      start_period: 30s
+      retries: 5
+    volumes:
+      - mongo1_data:/data/db
+
+    networks:
+      - mongo_net
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+      restart_policy:
+        condition: any
+        delay: 20s
+        window: 60s
+      placement:
+         constraints: [node.hostname == sw1]
+
+  mongo2:
+    # build:
+    #   context: /root/mongo/mongo/
+    #   dockerfile: Dockerfile
+    image: mongo:7.1
+    container_name: mongo2
+    hostname: mongo2
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - "27018:27017"
+    command: --replSet rs0 --keyFile /etc/mongo-keyfile --bind_ip_all --port 27017 --oplogSize 3
+    volumes:
+      - mongo2_data:/data/db
+
+    networks:
+      - mongo_net
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+      restart_policy:
+        condition: any
+        delay: 20s
+        window: 60s
+      placement:
+         constraints: [node.hostname == sw2]
+
+  mongo3:
+    # build:
+    #   context: /root/mongo/mongo/
+    #   dockerfile: Dockerfile
+    image: mongo:7.1
+    container_name: mongo3
+    hostname: mongo3
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - "27019:27017"
+    command: --replSet rs0 --keyFile /etc/mongo-keyfile --bind_ip_all --port 27017 --oplogSize 3
+    volumes:
+      - mongo3_data:/data/db
+    networks:
+      - mongo_net
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+      restart_policy:
+        condition: any
+        delay: 20s
+        window: 60s
+      placement:
+         constraints: [node.hostname == sw3]
+
+  mongo-express:
+    image: mongo-express
+    container_name: mongo-express
+    hostname: mongo-express
+    restart: always
+    environment:
+      ME_CONFIG_BASICAUTH_USERNAME: ""
+      ME_CONFIG_MONGODB_URL: "mongodb://root:root@mongo1:27017"
+    ports:
+      - "8081:8081"
+    networks:
+      - mongo_net
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+      restart_policy:
+        condition: any
+        delay: 20s
+        window: 60s
+      placement:
+         constraints: [node.hostname == sw1]
+
+  mongo-exporter-prometheus:
+    image: percona/mongodb_exporter:0.40
+    container_name: mongo-exporter-prometheus
+    hostname: mongo-exporter-prometheus
+    restart: always
+    command: --mongodb.uri=mongodb://root:root@172.16.100.103:27017/admin?ssl=false
+    ports:
+      - "9216:9216"
+    # environment:
+    #   MONGODB_URI: "mongodb://root:root@mongo1:27017/admin"
+    networks:
+      - mongo_net
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+      restart_policy:
+        condition: any
+        delay: 20s
+        window: 60s
+      placement:
+         constraints: [node.hostname == sw1]
+
+volumes:
+  mongo1_data: {}
+  mongo2_data: {}
+  mongo3_data: {}
+
+networks:
+  mongo_net:
+    name: mongo_net
+    external: true
+
+# db.createUser({
+#   user: "milad",
+#   pwd: "milad",
+#   roles: [
+#     { role: "clusterMonitor", db: "admin" },
+#     { role: "read", db: "local" }
+#   ]
+# });
+
+# #!/bin/bash
+
+# # MongoDB connection details with authentication
+# MONGO_HOST="localhost"
+# MONGO_PORT="27017"
+# MONGO_DB="mydatabase"
+# MONGO_COLLECTION="users"
+# MONGO_USER="root"
+# MONGO_PASS="root"
+
+# # Connection string including authentication
+# MONGO_URI="--port 27017 -u root -p root --authenticationDatabase admin"
+
+# # Insert fake data into MongoDB in an infinite loop
+# while true
+# do
+#     # Generate fake data
+#     NAME=$(echo "User_$RANDOM")
+#     AGE=$(shuf -i 20-50 -n 1)
+#     CITY=$(echo "City_$RANDOM")
+
+#     # MongoDB command to insert data
+#     DATA="{ \"name\": \"$NAME\", \"age\": $AGE, \"city\": \"$CITY\" }"
+#     COMMAND="db.$MONGO_COLLECTION.insert($DATA)"
+
+#     # Execute the MongoDB command
+#     echo "Inserting data: $DATA"
+#     mongosh $MONGO_URI --eval "$COMMAND" --quiet
+
+#     # Sleep for 1 second
+#     sleep 1
+# done
