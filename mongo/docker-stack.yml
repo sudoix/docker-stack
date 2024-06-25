@@ -131,6 +131,32 @@ services:
       placement:
          constraints: [node.hostname == sw1]
 
+  mongo-exporter-prometheus:
+    image: percona/mongodb_exporter:0.40
+    container_name: mongo-exporter-prometheus
+    hostname: mongo-exporter-prometheus
+    restart: always
+    command: --mongodb.uri=mongodb://root:root@172.16.100.103:27017/admin?ssl=false
+    ports:
+      - "9216:9216"
+    # environment:
+    #   MONGODB_URI: "mongodb://root:root@mongo1:27017/admin"
+    networks:
+      - mongo_net
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: stop-first
+      restart_policy:
+        condition: any
+        delay: 20s
+        window: 60s
+      placement:
+         constraints: [node.hostname == sw1]
+
 volumes:
   mongo1_data: {}
   mongo2_data: {}
@@ -138,3 +164,47 @@ volumes:
 
 networks:
   mongo_net:
+    name: mongo_net
+    external: true
+
+# db.createUser({
+#   user: "milad",
+#   pwd: "milad",
+#   roles: [
+#     { role: "clusterMonitor", db: "admin" },
+#     { role: "read", db: "local" }
+#   ]
+# });
+
+# #!/bin/bash
+
+# # MongoDB connection details with authentication
+# MONGO_HOST="localhost"
+# MONGO_PORT="27017"
+# MONGO_DB="mydatabase"
+# MONGO_COLLECTION="users"
+# MONGO_USER="root"
+# MONGO_PASS="root"
+
+# # Connection string including authentication
+# MONGO_URI="--port 27017 -u root -p root --authenticationDatabase admin"
+
+# # Insert fake data into MongoDB in an infinite loop
+# while true
+# do
+#     # Generate fake data
+#     NAME=$(echo "User_$RANDOM")
+#     AGE=$(shuf -i 20-50 -n 1)
+#     CITY=$(echo "City_$RANDOM")
+
+#     # MongoDB command to insert data
+#     DATA="{ \"name\": \"$NAME\", \"age\": $AGE, \"city\": \"$CITY\" }"
+#     COMMAND="db.$MONGO_COLLECTION.insert($DATA)"
+
+#     # Execute the MongoDB command
+#     echo "Inserting data: $DATA"
+#     mongosh $MONGO_URI --eval "$COMMAND" --quiet
+
+#     # Sleep for 1 second
+#     sleep 1
+# done
