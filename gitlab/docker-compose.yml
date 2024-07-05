@@ -7,9 +7,17 @@ services:
     restart: always
     environment:
       GITLAB_OMNIBUS_CONFIG: |
-        external_url 'http://git.sudoix.ir'
+        external_url 'https://git.sudoix.ir'
         gitlab_rails['gitlab_shell_ssh_port'] = 22
         gitlab_rails['time_zone'] = 'Tehran'
+        nginx['listen_port'] = 443
+        nginx['redirect_http_to_https'] = true
+        # Renew every 7th day of the month at 12:30
+        letsencrypt['enable'] = true
+        letsencrypt['auto_renew_hour'] = "12"
+        letsencrypt['auto_renew_minute'] = "30"
+        letsencrypt['auto_renew_day_of_month'] = "*/7"
+
         # gitlab_rails['time_zone'] = 'America/Chicago'
         # gitlab_rails['gitlab_email_from'] = 'gitlab-no-reply@example.com'
         # gitlab_rails['gitlab_email_display_name'] = 'GitLab Administrator'
