@@ -1,0 +1,63 @@
+services:
+  postgres_db:
+    image: postgres:17.4
+    hostname: postgres_db
+    container_name: postgres_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: semaphore
+      POSTGRES_PASSWORD: semaphore
+      POSTGRES_DB: semaphore
+    volumes:
+      - semaphore_postgres:/var/lib/postgresql/data
+    networks:
+      - semaphore_network
+  nginx:
+    image: nginx:1.27.4-alpine
+    container_name: nginx
+    hostname: nginx
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./proxy_pass.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - semaphore_network
+  semaphore:
+    image: semaphoreui/semaphore:v2.13.7
+    container_name: semaphore
+    hostname: semaphore
+    restart: unless-stopped
+    environment:
+      SEMAPHORE_DB_DIALECT: postgres
+      SEMAPHORE_DB_HOST: postgres_db
+      SEMAPHORE_DB_NAME: semaphore
+      SEMAPHORE_DB_USER: semaphore
+      SEMAPHORE_DB_PASS: semaphore
+      SEMAPHORE_ADMIN: admin
+      SEMAPHORE_ADMIN_PASSWORD: test123
+      SEMAPHORE_ADMIN_NAME: admin
+      SEMAPHORE_ADMIN_EMAIL: admin@localhost
+      ANSIBLE_HOST_KEY_CHECKING: "False"
+      # SEMAPHORE_TELEGRAM_ALERT: "True"
+      # SEMAPHORE_TELEGRAM_CHAT: "123456"
+      # SEMAPHORE_TELEGRAM_TOKEN: "1234567890"
+    # ports:
+    #   - 80:3000
+    volumes:
+      - semaphore_data:/var/lib/semaphore
+      - semaphore_config:/etc/semaphore
+      - semaphore_tmp:/tmp/semaphore
+    depends_on:
+      - postgres_db
+    networks:
+      - semaphore_network
+volumes:
+  semaphore_data:
+  semaphore_config:
+  semaphore_tmp:
+  semaphore_postgres:
+networks:
+  semaphore_network: {driver: "bridge"}
+
